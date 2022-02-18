@@ -86,6 +86,7 @@ extern "C"
         uint32_t transition_count;
         uint32_t current_state_enter_tick;
         uint32_t last_update_tick;
+        uint32_t current_tick;
         void *user_data;
     } FSM_t;
 

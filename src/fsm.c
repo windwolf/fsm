@@ -16,6 +16,7 @@ void FSM_init(FSM_t *fsm)
     fsm->current_state = NULL;
     fsm->current_state_enter_tick = 0;
     fsm->last_update_tick = 0;
+    fsm->current_tick = 0;
     fsm->transition_count = 0;
     fsm->user_data = NULL;
 }
@@ -86,6 +87,7 @@ void FSM_transitions_register(FSM_t *fsm, FSM_Transition_Config_t configs[], uin
 
 void FSM_start(FSM_t *fsm, uint32_t state_no, void *user_data, uint32_t initial_tick)
 {
+    fsm->current_tick = initial_tick;
     FSM_State_t *state = FSM_find_state(fsm, state_no);
     if (state == NULL)
     {
@@ -98,6 +100,7 @@ void FSM_start(FSM_t *fsm, uint32_t state_no, void *user_data, uint32_t initial_
 
 void FSM_update(FSM_t *fsm, uint32_t event_no, uint32_t tick)
 {
+    fsm->current_tick = tick;
     FSM_State_t *state = fsm->current_state;
     if (state == NULL)
     {
