@@ -13,6 +13,8 @@ extern "C"
 #define FSM_MAX_TRANSITIONS_COUNT (8)
 #define FSM_MAX_TRANSITIONS_COUNT_PRE_STATE (4)
 
+#define FSM_NO_EVENT (0)
+
     struct FSM_State_Config_t;
     struct FSM_State_t;
     struct FSM_Transition_Config_t;
@@ -21,15 +23,21 @@ extern "C"
 
     typedef enum
     {
-        FMS_STATE_MODE_INTERVAL,
-        FMS_STATE_MODE_POLL,
-    } FMS_State_Mode;
+        FSM_STATE_MODE_INTERVAL,
+        FSM_STATE_MODE_POLL
+    } FSM_State_Mode;
+
+    typedef enum
+    {
+        FSM_EVENT_MODE_OR,
+        FSM_EVENT_MODE_AND
+    } FSM_Event_Mode;
 
     typedef struct FSM_State_Config_t
     {
         uint32_t state_no;
         char *name;
-        // FMS_State_Mode mode;
+        // FSM_State_Mode mode;
         //  union
         //  {
         //      uint32_t interval;
@@ -61,7 +69,11 @@ extern "C"
         FSM_Transition_Mode mode;
         union
         {
-            uint32_t event_no;
+            struct
+            {
+                uint32_t events;
+                FSM_Event_Mode mode;
+            } event;
             uint32_t timeout;
             uint32_t (*condition)(struct FSM_t *, struct FSM_State_t *);
         } mode_parameters;
@@ -97,7 +109,7 @@ extern "C"
     void FSM_states_register(FSM_t *fsm, FSM_State_Config_t configs[], uint32_t count);
 
     void FSM_transition_register(FSM_t *fsm, FSM_Transition_Config_t *config);
-    
+
     void FSM_transitions_register(FSM_t *fsm, FSM_Transition_Config_t configs[], uint32_t count);
 
     void FSM_start(FSM_t *fsm, uint32_t state_no, void *user_data, uint32_t initial_tick);

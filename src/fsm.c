@@ -1,5 +1,7 @@
 #include "fsm/fsm.h"
 
+#define EVENT_CHECK(flag, event, mode) (((mode) == FSM_EVENT_MODE_OR) ? (((flag) & (event)) != 0) : (((flag) & (event)) == (event)))
+
 static FSM_State_t *FSM_find_state(FSM_t *fsm, uint32_t state_no);
 
 static void FSM_state_entry(FSM_t *fsm, FSM_State_t *state, uint32_t tick);
@@ -45,17 +47,17 @@ void FSM_transition_register(FSM_t *fsm, FSM_Transition_Config_t *config)
 {
     if (config->mode == FSM_TRANSITION_MODE_EVENT)
     {
-        if (config->mode_parameters.event_no == 0)
+        if (config->mode_parameters.event.events == FSM_NO_EVENT)
         {
             return;
         }
     }
     else if (config->mode == FSM_TRANSITION_MODE_TIMEOUT)
     {
-        if (config->mode_parameters.timeout == 0)
-        {
-            return;
-        }
+        // if (config->mode_parameters.timeout == 0)
+        // {
+        //     return;
+        // }
     }
     else if (config->mode == FSM_TRANSITION_MODE_CONDITION && config->mode_parameters.condition == NULL)
     {
@@ -98,7 +100,7 @@ void FSM_start(FSM_t *fsm, uint32_t state_no, void *user_data, uint32_t initial_
     fsm->last_update_tick = initial_tick;
 }
 
-void FSM_update(FSM_t *fsm, uint32_t event_no, uint32_t tick)
+void FSM_update(FSM_t *fsm, uint32_t event, uint32_t tick)
 {
     fsm->current_tick = tick;
     FSM_State_t *state = fsm->current_state;
@@ -107,13 +109,13 @@ void FSM_update(FSM_t *fsm, uint32_t event_no, uint32_t tick)
         return;
     }
     FSM_state_poll(fsm, state);
-    FSM_transition_check(fsm, state, event_no, tick);
+    FSM_transition_check(fsm, state, event, tick);
     fsm->last_update_tick = tick;
 }
 
-void FSM_update_inc(FSM_t *fsm, uint32_t event_no, uint32_t tick_inc)
+void FSM_update_inc(FSM_t *fsm, uint32_t event, uint32_t tick_inc)
 {
-    FSM_update(fsm, event_no, fsm->last_update_tick + tick_inc);
+    FSM_update(fsm, event, fsm->last_update_tick + tick_inc);
 }
 
 static FSM_State_t *FSM_find_state(FSM_t *fsm, uint32_t state_no)
@@ -155,31 +157,13 @@ static void FSM_state_poll(FSM_t *fsm, FSM_State_t *state)
     }
 }
 
-static void FSM_try_transition_by_timeout(FSM_t *fsm, FSM_State_t *state, uint32_t tick)
-{
-    for (uint32_t i = 0; i < state->transition_count; i++)
-    {
-        FSM_Transition_t *transition = state->transitions[i];
-        if (transition->config->mode == FSM_TRANSITION_MODE_TIMEOUT && transition->config->mode_parameters.timeout <= (tick - fsm->current_state_enter_tick))
-        {
-            FSM_state_exit(fsm, state);
-            if (transition->config->action != NULL)
-            {
-                transition->config->action(fsm, state);
-            }
-            FSM_state_entry(fsm, transition->to, tick);
-            return;
-        }
-    }
-}
-
-static void FSM_transition_check(FSM_t *fsm, FSM_State_t *state, uint32_t event_no, uint32_t tick)
+static void FSM_transition_check(FSM_t *fsm, FSM_State_t *state, uint32_t event, uint32_t tick)
 {
     uint32_t duration = (tick - fsm->current_state_enter_tick);
     for (uint32_t i = 0; i < state->transition_count; i++)
     {
         FSM_Transition_t *transition = state->transitions[i];
-        if (transition->config->mode == FSM_TRANSITION_MODE_EVENT && transition->config->mode_parameters.event_no == event_no)
+        if (transition->config->mode == FSM_TRANSITION_MODE_EVENT && EVENT_CHECK(transition->config->mode_parameters.event.events, event, transition->config->mode_parameters.event.mode))
         {
             FSM_state_exit(fsm, state);
             if (transition->config->action != NULL)
