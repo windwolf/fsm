@@ -13,7 +13,8 @@ extern "C"
 #define FSM_MAX_TRANSITIONS_COUNT (8)
 #define FSM_MAX_TRANSITIONS_COUNT_PRE_STATE (4)
 
-#define FSM_NO_EVENT (0)
+#define FSM_NO_EVENT (0x00000000)
+#define FSM_ALL_EVENT (0xFFFFFFFF)
 
     struct FSM_State_Config_t;
     struct FSM_State_t;
@@ -94,6 +95,8 @@ extern "C"
         uint32_t state_count;
         struct FSM_State_t *current_state;
 
+        uint32_t events;
+
         struct FSM_Transition_t transitions[FSM_MAX_TRANSITIONS_COUNT];
         uint32_t transition_count;
         uint32_t current_state_enter_tick;
@@ -114,9 +117,13 @@ extern "C"
 
     void FSM_start(FSM_t *fsm, uint32_t state_no, void *user_data, uint32_t initial_tick);
 
-    void FSM_update(FSM_t *fsm, uint32_t event, uint32_t tick);
+    void FSM_event_set(FSM_t *fsm, uint32_t events);
 
-    void FSM_update_inc(FSM_t *fsm, uint32_t event, uint32_t tick_inc);
+    void FSM_event_reset(FSM_t *fsm, uint32_t events);
+
+    void FSM_update(FSM_t *fsm, uint32_t tick);
+
+    void FSM_update_inc(FSM_t *fsm, uint32_t tick_inc);
 
 #ifdef __cplusplus
 }
